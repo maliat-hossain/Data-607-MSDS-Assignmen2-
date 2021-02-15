@@ -1,0 +1,96 @@
+---
+title: "Assignment2 607"
+author: "Maliat"
+date: "2/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+### For this assignment six recent movies have been chosen and rated. the ratings have been stored in sql workbench and transferred into R studio.
+
+
+
+```{r include=FALSE}
+setwd("C:/Users/malia/OneDrive/Desktop/MSDS DATA 607")
+library(kableExtra)
+library(RMySQL)
+library(RODBC)
+library(dplyr)
+library(zoo)
+
+
+
+install.packages("imputeTS",repos = "http://cran.us.r-project.org")
+install.packages("reshape2",repos = "http://cran.us.r-project.org")
+
+```
+
+```{r}
+defaultW <- getOption("warning") 
+
+options(warning = -1) 
+
+options(warning = defaultW)
+```
+
+
+### Hiding Database Password
+
+```{r include=FALSE}
+psswd <- .rs.askForPassword("")
+con <- dbConnect(MySQL(), user="root", password=psswd, 
+             dbname="assignment_2_607", host="localhost",
+             client.flag=CLIENT_MULTI_STATEMENTS)
+
+```
+
+
+
+```{r}
+SQLMovieData <- dbGetQuery(conn, "SELECT * FROM assignment_2_607.`movie rating 2`;")
+SQLMovieData
+```
+
+```{r}
+
+SQLMovieData$"Movie 1 Promising Young woman"[is.na(SQLMovieData$"Movie 1 Promising Young woman")]<-mean(SQLMovieData$"Movie 1 Promising Young woman",na.rm = TRUE)
+```
+
+
+```{r}
+SQLMovieData
+```
+
+### Missing values have been replaced using mean values from the rating.
+
+```{r include=FALSE}
+library(imputeTS)
+SQLMovieData1<-na_mean(SQLMovieData)
+
+```
+
+```{r include=FALSE}
+library(reshape2)
+ArrangedData <-melt(SQLMovieData1, id.vars = c("Name"))
+names(ArrangedData)[2:3]<- c("Movie", "Rating")
+ArrangedData$Rating<-as.numeric(ArrangedData$Rating)
+ArrangedData
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(data=ArrangedData, aes(x=Rating, y = Movie, fill = Rating, label = Rating))+
+    geom_bar(stat="identity")+ 
+    facet_wrap(~Name)+
+    ggtitle("Movie Ratings by Family and Friends")+
+    theme(axis.text.x = element_blank(),plot.title = element_text(hjust=0.5),legend.position = "right")
+```
+
+
+### Standardization will not work here because the ratings belong to same range of numbers. However, if they had different range of numbers, standardization would have been necessary.
